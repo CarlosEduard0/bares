@@ -2,31 +2,31 @@
 #include <iomanip>
 #include <vector>
 
-#include "Parser.h"
+#include "../include/Parser.h"
 
 std::vector<std::string> expressions =
-{
-    "10",
-    "    12    +    4   8",
-    "32767 - 32768 + 3",
-    "5 + -32766",
-    "5 + -32769",
-    "12 + 3",
-    "-3+-5+-6",
-    "12 + 3     -3 + -34 ",
-    "+12",
-    "1.3 * 4",
-    "a + 4",
-    "       ",
-    "  123 *  548"
-};
+        {
+                "10",
+                "    12    +    4   8",
+                "32767 - 32768 + 3",
+                "5 + -32766",
+                "5 + -32769",
+                "12 + 3",
+                "-3+-5+-6",
+                "12 + 3     -3 + -34 ",
+                "+12",
+                "1.3 * 4",
+                "a + 4",
+                "       ",
+                "  123 *  548"
+        };
 
 void print_error_msg(const Parser::ResultType &result, std::string str) {
-    std::string error_indicator( str.size()+1, ' ');
+    std::string error_indicator(str.size() + 1, ' ');
 
     // Have we got a parsing error?
     error_indicator[result.at_col] = '^';
-    switch ( result.type ) {
+    switch (result.type) {
         case Parser::ResultType::UNEXPECTED_END_OF_EXPRESSION:
             std::cout << ">>> Unexpected end of input at column (" << result.at_col << ")!\n";
             break;
@@ -55,19 +55,19 @@ void print_error_msg(const Parser::ResultType &result, std::string str) {
 int main() {
     Parser my_parser; // Instancia um parser.
     // Tentar analisar cada expressão da lista.
-    for(const auto & expr : expressions) {
+    for (const auto &expr : expressions) {
         // Fazer o parsing desta expressão.
-        auto result = my_parser.parse( expr );
+        auto result = my_parser.parse(expr);
         // Preparar cabeçalho da saida.
         std::cout << std::setfill('=') << std::setw(80) << "\n";
         std::cout << std::setfill(' ') << ">>> Parsing \"" << expr << "\"\n";
         // Se deu pau, imprimir a mensagem adequada.
-        if ( result.type != Parser::ResultType::OK ) {
+        if (result.type != Parser::ResultType::OK) {
             print_error_msg(result, expr);
         } else {
             std::cout << ">>> Expression SUCCESSFULLY parsed!\n";
         }
-         // Recuperar a lista de tokens.
+        // Recuperar a lista de tokens.
         auto lista = my_parser.get_tokens();
         std::cout << ">>> Tokens: { ";
         std::copy(lista.begin(), lista.end(), std::ostream_iterator<Token>(std::cout, " "));

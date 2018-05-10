@@ -1,21 +1,15 @@
-#ifndef _SIMBOLO_H_
-#define _SIMBOLO_H_
+#ifndef BARES_SIMBOLO_H
+#define BARES_SIMBOLO_H
 
 #include <string>
 #include <vector>
 #include <algorithm>
 
-typedef enum type {OPERADOR, OPERANDO, DELIMITADOR} Type;
-
-/**
- * \brief Classe que representa os símbolos do sistema.
- */
 class Simbolo {
-    public:
-        std::string value;
+public:
+    std::string value;
 
-        Simbolo(std::string);
-        Type getType() const;
+    Simbolo(std::string);
 };
 
-#endif
+#endif //BARES_SIMBOLO_H

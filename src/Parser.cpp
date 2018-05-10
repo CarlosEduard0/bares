@@ -1,16 +1,18 @@
-#include <iterator>
-#include <algorithm>
-
-#include "Parser.h"
+#include "../include/Parser.h"
 
 /// Converts the input character c_ into its corresponding terminal symbol code.
-Parser::terminal_symbol_t  Parser::lexer(char c_) const {
-    switch( c_ ) {
-        case '+':  return terminal_symbol_t::TS_PLUS;
-        case '-':  return terminal_symbol_t::TS_MINUS;
-        case ' ':  return terminal_symbol_t::TS_WS;
-        case   9:  return terminal_symbol_t::TS_TAB;
-        case '0':  return terminal_symbol_t::TS_ZERO;
+Parser::terminal_symbol_t Parser::lexer(char c_) const {
+    switch (c_) {
+        case '+':
+            return terminal_symbol_t::TS_PLUS;
+        case '-':
+            return terminal_symbol_t::TS_MINUS;
+        case ' ':
+            return terminal_symbol_t::TS_WS;
+        case 9:
+            return terminal_symbol_t::TS_TAB;
+        case '0':
+            return terminal_symbol_t::TS_ZERO;
         case '1':
         case '2':
         case '3':
@@ -19,8 +21,10 @@ Parser::terminal_symbol_t  Parser::lexer(char c_) const {
         case '6':
         case '7':
         case '8':
-        case '9':  return terminal_symbol_t::TS_NON_ZERO_DIGIT;
-        case '\0': return terminal_symbol_t::TS_EOS; // end of string: the $ terminal symbol
+        case '9':
+            return terminal_symbol_t::TS_NON_ZERO_DIGIT;
+        case '\0':
+            return terminal_symbol_t::TS_EOS; // end of string: the $ terminal symbol
     }
     return terminal_symbol_t::TS_INVALID;
 }
@@ -40,10 +44,10 @@ bool Parser::end_input(void) const {
 }
 
 /// Returns the result of trying to match the current character with c_, **without** consuming the current character from the input expression.
-bool Parser::peek( terminal_symbol_t c_ ) const {
+bool Parser::peek(terminal_symbol_t c_) const {
     // Checks whether the input symbol is equal to the argument symbol.
-    return ( not end_input() and
-             lexer( *it_curr_symb ) == c_ );
+    return (not end_input() and
+            lexer(*it_curr_symb) == c_);
 }
 
 /// Returns the result of trying to match (peek()) and consume the current character with c_.
@@ -53,11 +57,10 @@ bool Parser::peek( terminal_symbol_t c_ ) const {
  * @see peek().
  * @return true if we got a successful match; false otherwise.
  */
-bool Parser::accept( terminal_symbol_t c_ ) {
+bool Parser::accept(terminal_symbol_t c_) {
     // If we have a match, we consume the character from the input source expression.
     // caractere da entrada.
-    if ( peek( c_ ) )
-    {
+    if (peek(c_)) {
         next_symbol();
         return true;
     }
@@ -66,20 +69,19 @@ bool Parser::accept( terminal_symbol_t c_ ) {
 }
 
 /// Skips all white spaces and tries to accept() the next valid character. @see accept().
-bool Parser::expect( terminal_symbol_t c_ ) {
+bool Parser::expect(terminal_symbol_t c_) {
     // Skip all white spaces first.
     skip_ws();
-    return accept( c_ );
+    return accept(c_);
 }
 
 
 /// Ignores any white space or tabs in the expression until reach a valid character or end of input.
-void Parser::skip_ws( void ) {
+void Parser::skip_ws(void) {
     // Skip white spaces, while at the same time, check for end of string.
-    while ( not end_input() and
-            ( lexer( *it_curr_symb ) == Parser::terminal_symbol_t::TS_WS  or
-              lexer( *it_curr_symb ) == Parser::terminal_symbol_t::TS_TAB ) )
-    {
+    while (not end_input() and
+           (lexer(*it_curr_symb) == Parser::terminal_symbol_t::TS_WS or
+            lexer(*it_curr_symb) == Parser::terminal_symbol_t::TS_TAB)) {
         next_symbol();
     }
 }
@@ -118,32 +120,32 @@ Parser::ResultType Parser::expression() {
 Parser::ResultType Parser::term() {
     skip_ws();
     // Guarda o início do termo no input, para possíveis mensagens de erro.
-    auto begin_token( it_curr_symb );
+    auto begin_token(it_curr_symb);
     // Processe um inteiro.
-    auto result =  integer();
+    auto result = integer();
     // Vamos tokenizar o inteiro, se ele for bem formado.
-    if ( result.type == ResultType::OK ) {
+    if (result.type == ResultType::OK) {
         // Copiar a substring correspondente para uma variável string.
         std::string token_str;
-        std::copy( begin_token, it_curr_symb, std::back_inserter( token_str ) );
+        std::copy(begin_token, it_curr_symb, std::back_inserter(token_str));
         // Tentar realizar a conversão de string para inteiro (usar stoll()).
         input_int_type token_int;
         try {
-            token_int = stoll( token_str );
-        } catch( const std::invalid_argument & e ) {
-            return ResultType( ResultType::ILL_FORMED_INTEGER, 
-                               std::distance( expr.begin(), begin_token ) );
+            token_int = stoll(token_str);
+        } catch (const std::invalid_argument &e) {
+            return ResultType(ResultType::ILL_FORMED_INTEGER,
+                              std::distance(expr.begin(), begin_token));
         }
 
         // Recebemos um inteiro válido, resta saber se está dentro da faixa.
-        if ( token_int < std::numeric_limits< required_int_type >::min() or
-                token_int > std::numeric_limits< required_int_type >::max() ) {
+        if (token_int < std::numeric_limits<required_int_type>::min() or
+            token_int > std::numeric_limits<required_int_type>::max()) {
             // Fora da faixa, reportar erro.
-            return ResultType( ResultType::INTEGER_OUT_OF_RANGE, 
-                               std::distance( expr.begin(), begin_token ) );
+            return ResultType(ResultType::INTEGER_OUT_OF_RANGE,
+                              std::distance(expr.begin(), begin_token));
         }
         // Coloca o novo token na nossa lista de tokens.
-        token_list.emplace_back( Token( token_str, Token::token_t::OPERAND ) );
+        token_list.emplace_back(Token(token_str, Token::token_t::OPERAND));
     }
     return result;
 }
@@ -181,13 +183,13 @@ Parser::ResultType Parser::integer() {
  */
 Parser::ResultType Parser::natural_number() {
     // Tem que vir um número que não seja zero! (de acordo com a definição).
-    if ( not digit_excl_zero() )
-        return ResultType( ResultType::ILL_FORMED_INTEGER, std::distance( expr.begin(), it_curr_symb ) ) ;
+    if (not digit_excl_zero())
+        return ResultType(ResultType::ILL_FORMED_INTEGER, std::distance(expr.begin(), it_curr_symb));
 
     // Cosumir os demais dígitos, se existirem...
-    while( digit() ) /* empty */ ;
+    while (digit()) /* empty */ ;
 
-    return ResultType( ResultType::OK );
+    return ResultType(ResultType::OK);
 }
 
 /// Validates (i.e. returns true or false) and consumes a non-zero digit from the input string.
@@ -201,7 +203,7 @@ Parser::ResultType Parser::natural_number() {
  * @return true if a non-zero digit has been successfuly parsed from the input; false otherwise.
  */
 bool Parser::digit_excl_zero() {
-    return accept( terminal_symbol_t::TS_NON_ZERO_DIGIT );
+    return accept(terminal_symbol_t::TS_NON_ZERO_DIGIT);
 }
 
 /// Validates (i.e. returns true or false) and consumes a zero digit from the input string.
@@ -215,7 +217,7 @@ bool Parser::digit_excl_zero() {
  * @return true if a digit has been successfuly parsed from the input; false otherwise.
  */
 bool Parser::digit() {
-    return ( accept( terminal_symbol_t::TS_ZERO ) or digit_excl_zero() ) ? true : false;
+    return (accept(terminal_symbol_t::TS_ZERO) or digit_excl_zero()) ? true : false;
 
 /*
     if ( not accept( terminal_symbol_t::TS_ZERO ) )
@@ -236,7 +238,7 @@ bool Parser::digit() {
  *
  * @see ResultType
  */
-Parser::ResultType  Parser::parse(std::string e_) {
+Parser::ResultType Parser::parse(std::string e_) {
     expr = e_; //  Guarda a expressão no membro correspondente.
     it_curr_symb = expr.begin(); // Define o simbolo inicial a ser processado.
     ResultType result; // By default it's OK.
@@ -247,10 +249,9 @@ Parser::ResultType  Parser::parse(std::string e_) {
     // Vamos verificar se recebemos uma  Let us ignore any leading white spaces.
     skip_ws();
     if (end_input()) { // Premature end?
-            result =  ResultType( ResultType::UNEXPECTED_END_OF_EXPRESSION,
-                std::distance( expr.begin(), it_curr_symb ) );
-    }
-    else {
+        result = ResultType(ResultType::UNEXPECTED_END_OF_EXPRESSION,
+                            std::distance(expr.begin(), it_curr_symb));
+    } else {
         // chamada regular para expressão.
         result = expression();
 
@@ -260,7 +261,7 @@ Parser::ResultType  Parser::parse(std::string e_) {
             // espaços em branco.
             skip_ws(); // Vamos "consumir" os espaços em branco, se existirem....
             if (!end_input()) { // Se estiver tudo ok, deveríamos estar no final da string.
-                return ResultType( ResultType::EXTRANEOUS_SYMBOL, std::distance( expr.begin(), it_curr_symb ) );
+                return ResultType(ResultType::EXTRANEOUS_SYMBOL, std::distance(expr.begin(), it_curr_symb));
             }
         }
     }
@@ -272,7 +273,7 @@ Parser::ResultType  Parser::parse(std::string e_) {
 
 /// Return the list of tokens, which is the by-product created during the syntax analysis.
 std::vector<Token>
-Parser::get_tokens( void ) const {
+Parser::get_tokens(void) const {
     return token_list;
 }
 
