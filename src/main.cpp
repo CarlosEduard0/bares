@@ -3,23 +3,7 @@
 #include <vector>
 
 #include "../include/Parser.h"
-
-std::vector<std::string> expressions =
-        {
-                "10",
-                "    12    +    4   8",
-                "32767 - 32768 + 3",
-                "5 + -32766",
-                "5 + -32769",
-                "12 + 3",
-                "-3+-5+-6",
-                "12 + 3     -3 + -34 ",
-                "+12",
-                "1.3 * 4",
-                "a + 4",
-                "       ",
-                "  123 *  548"
-        };
+#include "../include/Evaluator.h"
 
 void print_error_msg(const Parser::ResultType &result, std::string str) {
     std::string error_indicator(str.size() + 1, ' ');
@@ -42,6 +26,15 @@ void print_error_msg(const Parser::ResultType &result, std::string str) {
         case Parser::ResultType::INTEGER_OUT_OF_RANGE:
             std::cout << ">>> Integer constant out of range beginning at column (" << result.at_col << ")!\n";
             break;
+        case Parser::ResultType::MISSING_CLOSING:
+            std::cout << ">>> Mising closing \")\" at column (" << result.at_col << ")!\n";
+            break;
+        case Parser::ResultType::DIVISION_ZERO:
+            std::cout << ">>> Division by zero!\n";
+            break;
+        case Parser::ResultType::NUMERIC_OVERFLOW:
+            std::cout << ">>> Numeric overflow error!\n";
+            break;
         default:
             std::cout << ">>> Unhandled error found!\n";
             break;
@@ -53,6 +46,22 @@ void print_error_msg(const Parser::ResultType &result, std::string str) {
 
 
 int main() {
+    std::vector<std::string> expressions = {
+            "10",
+            "    12    +    4   8",
+            "32767 - 32768 + 3",
+            "5 + -32766",
+            "5 + -32769",
+            "12 + 3",
+            "-3+-5+-6",
+            "12 + 3     -3 + -34 ",
+            "+12",
+            "1.3 * 4",
+            "a + 4",
+            "       ",
+            "  123 *  548"
+    };
+
     Parser my_parser; // Instancia um parser.
     // Tentar analisar cada expressão da lista.
     for (const auto &expr : expressions) {
@@ -64,14 +73,19 @@ int main() {
         // Se deu pau, imprimir a mensagem adequada.
         if (result.type != Parser::ResultType::OK) {
             print_error_msg(result, expr);
+            continue;
         } else {
             std::cout << ">>> Expression SUCCESSFULLY parsed!\n";
         }
         // Recuperar a lista de tokens.
         auto lista = my_parser.get_tokens();
-        std::cout << ">>> Tokens: { ";
+        /*std::cout << ">>> Tokens: { ";
         std::copy(lista.begin(), lista.end(), std::ostream_iterator<Token>(std::cout, " "));
-        std::cout << "}\n";
+        std::cout << "}\n";*/
+
+        Evaluator bares;
+        Token resultado = bares.evaluate_postfix(lista);
+        std::cout << ">>> Result is: " << resultado.value << std::endl;
     }
 
     std::cout << "\n>>> Normal exiting...\n";

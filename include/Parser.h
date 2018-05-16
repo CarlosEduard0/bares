@@ -40,7 +40,10 @@ public:
             ILL_FORMED_INTEGER,
             MISSING_TERM,
             EXTRANEOUS_SYMBOL,
-            INTEGER_OUT_OF_RANGE
+            INTEGER_OUT_OF_RANGE,
+            MISSING_CLOSING,
+            DIVISION_ZERO,
+            NUMERIC_OVERFLOW
         };
 
         //=== Members (public).
@@ -80,12 +83,18 @@ private:
     enum class terminal_symbol_t {  // The symbols:-
         TS_PLUS,            //!< code for "+"
         TS_MINUS,           //!< code for "-"
+        TS_TIMES,           //!< code for "*"
+        TS_SLASH,           //!< code for "/"
+        TS_MOD,             //!< code for "%"
+        TS_CIRCUMFLEX,      //!< code for "^"
         TS_ZERO,            //!< code for "0"
         TS_NON_ZERO_DIGIT,  //!< code for digits "1"->"9"
         TS_WS,              //!< code for a white-space
         TS_TAB,             //!< code for tab
         TS_EOS,             //!< code for "End Of String"
-        TS_INVALID          //!< invalid token
+        TS_INVALID,         //!< invalid token
+        TS_OPENING_SCOPE,   //!< code for "("
+        TS_CLOSING_SCOPE   //!< code for ")"
     };
 
     //==== Private members.

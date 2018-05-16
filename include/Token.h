@@ -9,7 +9,7 @@ struct Token {
 public:
     enum class token_t : int {
         OPERAND = 0,   //!< A type representing numbers.
-        OPERATOR,      //!< A type representing  "+", "-".
+        OPERATOR,      //!< A type representing  "+", "-". "*", "/", "%", "^".
         OPENING_SCOPE, //!< A type representing "(".
         CLOSING_SCOPE  //!< A type representing ")".
     };
@@ -19,7 +19,7 @@ public:
 
     /// Construtor default.
     explicit Token(std::string value_ = "", token_t type_ = token_t::OPERAND)
-            : value(value_), type(type_) {/* empty */}
+            : value(std::move(value_)), type(type_) {/* empty */}
 
     /// Just to help us debug the code.
     friend std::ostream &operator<<(std::ostream &os_, const Token &t_) {
