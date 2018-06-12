@@ -84,7 +84,7 @@ Token Evaluator::execute_operator(Token v1, Token v2, Token t) const {
 
     switch(t.value[0]) {
         case '^':
-            return Token(std::to_string(pow(valor1, valor2)), Token::token_t::OPERAND);
+            return Token(std::to_string((int) pow(valor1, valor2)), Token::token_t::OPERAND);
         case '*':
             return Token(std::to_string(valor1 * valor2), Token::token_t::OPERAND);
         case '/':
@@ -112,7 +112,11 @@ Token Evaluator::evaluate_postfix(std::vector<Token> postfix) const {
         } else if(is_operator(t)) {
             auto op2 = s.top(); s.pop();
             auto op1 = s.top(); s.pop();
-            s.push(execute_operator(op1, op2, t));
+            try {
+                s.push(execute_operator(op1, op2, t));
+            } catch(const std::runtime_error& error) {
+                std::cerr << "Division by zero!\n";
+            }
         } else {
             assert(false);
         }

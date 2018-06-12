@@ -133,6 +133,11 @@ Parser::ResultType Parser::expression() {
         }
 
         result = term();
+        if ( result.type != ResultType::OK and result.type != ResultType::INTEGER_OUT_OF_RANGE and end_input())
+        {
+            result.type = ResultType::MISSING_TERM;
+            return result;
+        }
     }
 
     return result;
