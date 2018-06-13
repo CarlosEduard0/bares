@@ -1,125 +1,206 @@
+#include "Evaluator.h"
 #include <utility>
-#include "../include/Evaluator.h"
 
-bool Evaluator::is_operator(Token t) const {
+//!< Verifica se o token é um operador
+bool Evaluator::is_operator(Token t) {
+
     return t.type == Token::token_t::OPERATOR;
 }
 
-bool Evaluator::is_operand(Token t) const {
+//!< Verifica se o token é um operando
+bool Evaluator::is_operand(Token t) {
     return t.type == Token::token_t::OPERAND;
 }
 
-bool Evaluator::is_opening_scope(Token t) const {
-    return t.type == Token::token_t::OPENING_SCOPE;
+//!< Verifica o caractere informado é um parênteses aberto
+bool Evaluator::is_opening_scope(std::string c) {
+    return (c == "(");
 }
 
-bool Evaluator::is_closing_scope(Token t) const {
-    return t.type == Token::token_t::CLOSING_SCOPE;
+//!< Verifica o caractere informado é um parênteses aberto
+bool Evaluator::is_closing_scope(std::string c) {
+    return (c == ")");
 }
 
-std::vector<Token> Evaluator::infix_to_postfix(std::vector<Token> infix) const {
-    std::stack<Token> s;
-    std::vector<Token> postfix;
-
-    for(const auto &t : infix) {
-        if(is_operand(t)) {
-            postfix.emplace_back(t);
-        } else if(is_opening_scope(t)) {
-            s.push(t);
-        } else if(is_closing_scope(t)) {
-            while(!is_opening_scope(s.top())) {
-                postfix.emplace_back(s.top());
-                s.pop();
-            }
-            s.pop();
-        } else if(is_operator(t)) {
-            while(!s.empty() && has_higher_or_eq_precedence(s.top(), t)) {
-                postfix.emplace_back(s.top());
-                s.pop();
-            }
-            s.push(t);
-        } else {
-
-        }
-    }
-    while(!s.empty()) {
-        postfix.emplace_back(s.top());
-        s.pop();
-    }
-    return postfix;
+//!< Verifica se é associação a direita
+bool Evaluator::is_right_association(std::string c) {
+    return c == "^";
 }
 
-bool Evaluator::is_right_association(Token t) const {
-    return t.value == "^";
-}
+//!< Executa uma operação
+Evaluator::EvaluatorResult Evaluator::execute_operator(std::string op1, std::string op2, Token opr) {
 
-short Evaluator::get_precedence(Token t) const {
-    switch (t.value[0]) {
-        case '^':
-            return 3;
-        case '*':
-        case '/':
-        case '%':
-            return 2;
-        case '+':
-        case '-':
-            return 1;
-        case '(':
-            return 0;
+    std::string resultadoFinal;
+
+    std::string::size_type sz;   // alias size_t
+    auto num1 = static_cast<int>(std::stol(op1, &sz));
+    auto num2 = static_cast<int>(std::stol(op2, &sz));
+
+    value_type resultado(0);
+    Evaluator::EvaluatorResult e;
+
+    //converte o Token para const char
+    const char *d = (opr.value).c_str();
+    switch (*d) {
+        case '^' :
+            resultado = static_cast<value_type>( pow(num1, num2));
+            break;
+        case '*' :
+            resultado = num1 * num2;
+            break;
+        case '/' :
+            if (num2 == 0) {
+                e.type_b = Evaluator::EvaluatorResult::DIVISION_BY_ZERO;
+                return e;
+            } else
+                resultado = num1 / num2;
+            break;
+        case '%' :
+            if (num2 == 0) {
+                e.type_b = Evaluator::EvaluatorResult::DIVISION_BY_ZERO;
+                return e;
+            } else
+                resultado = num1 % num2;
+            break;
+        case '+' :
+            resultado = num1 + num2;
+            break;
+        case '-' :
+            resultado = num1 - num2;
+            break;
         default:
             assert(false);
     }
-    return -1;
+
+    if (resultado <= std::numeric_limits<Parser::required_int_type>::max()
+        and resultado >= std::numeric_limits<Parser::required_int_type>::min()) {
+
+        std::stringstream ss;
+        ss << resultado;
+        e.value_b = ss.str();
+        e.type_b = Evaluator::EvaluatorResult::OK;
+
+    } else
+        e.type_b = Evaluator::EvaluatorResult::NUMERIC_OVERFLOW;
+
+    return e;
+
+
 }
 
-bool Evaluator::has_higher_or_eq_precedence(Token op1, Token op2) const {
-    return (get_precedence(op1) >= get_precedence(std::move(op2))) ? !is_right_association(op1) : false;
-}
+//!< Executa uma expressão
+Evaluator::EvaluatorResult Evaluator::evaluate(std::vector<Token> infix) {
 
-Token Evaluator::execute_operator(Token v1, Token v2, Token t) const {
+    infix_to_postfix(std::move(infix));
+    std::stack<std::string> s;
+    Evaluator::EvaluatorResult resultado;
 
-    std::string::size_type sz;              // alias of size_t
-    auto valor1 = static_cast<int>(std::stol(v1.value, &sz));
-    auto valor2 = static_cast<int>(std::stol(v2.value, &sz));
+    for (Token ch: expression) {
+        if (is_operand(ch)) s.push(ch.value);
 
-    switch(t.value[0]) {
-        case '^':
-            return Token(std::to_string((int) pow(valor1, valor2)), Token::token_t::OPERAND);
-        case '*':
-            return Token(std::to_string(valor1 * valor2), Token::token_t::OPERAND);
-        case '/':
-            if (valor2 == 0) throw std::runtime_error("Division by zero!");
-            return Token(std::to_string(valor1 / valor2), Token::token_t::OPERAND);
-        case '%':
-            if (valor2 == 0) throw std::runtime_error("Division by zero!");
-            return Token(std::to_string(valor1 % valor2), Token::token_t::OPERAND);
-        case '+':
-            return Token(std::to_string(valor1 + valor2), Token::token_t::OPERAND);
-        case '-':
-            return Token(std::to_string(valor1 - valor2), Token::token_t::OPERAND);
-        default:break;
-    }
-
-    throw std::runtime_error("Invalid operator!");
-}
-
-Token Evaluator::evaluate_postfix(std::vector<Token> postfix) const {
-    postfix = infix_to_postfix(postfix);
-    std::stack<Token> s;
-    for(const Token &t : postfix) {
-        if(is_operand(t)) {
-            s.push(t);
-        } else if(is_operator(t)) {
+        else if (is_operator(ch)) {
             auto op2 = s.top(); s.pop();
             auto op1 = s.top(); s.pop();
-            try {
-                s.push(execute_operator(op1, op2, t));
-            } catch(const std::runtime_error& error) {
-                std::cerr << "Division by zero!\n";
-            }
+
+            resultado = execute_operator(op1, op2, ch);
+            if (resultado.type_b != Evaluator::EvaluatorResult::OK)
+                return resultado;
+            else
+                s.push(resultado.value_b);
         } else {
             assert(false);
         }
     }
-    return s.top();
+
+    resultado.value_b = s.top();
+
+    return resultado;
+}
+
+//!< Converte a expressão infixa para posfixa
+void Evaluator::infix_to_postfix(std::vector<Token> infix) {
+    std::string postfix;
+    std::stack<std::string> s;
+
+    for (Token c : infix) {
+        if (is_operand(c)) {
+            Token add;
+            add.type = c.type;
+            add.value = c.value;
+            expression.push_back(add);;
+        } else if (is_operator(c)) {
+            //Remove elementos com prioridade superior
+            while (not s.empty() and has_higher_precedence(s.top(), c.value)) {
+                Token add;
+                add.type = c.type;
+                add.value = s.top(); s.pop();
+                expression.push_back(add);
+            }
+            // Colocando o operador na fila
+            s.push(c.value);
+        } else if (is_opening_scope(c.value)) {
+            s.push(c.value);
+        } else if (is_closing_scope(c.value)) {
+            //Remove todos os elementos exceto '('
+            while (not is_opening_scope(s.top()) and not s.empty()) {
+                Token add;
+                add.type = Token::token_t::OPERATOR;
+                add.value = s.top(); s.pop();
+                expression.push_back(add);
+            }
+            s.pop();
+        }
+    }
+
+    while (not s.empty()) {
+        Token add;
+        add.type = Token::token_t::OPERATOR;
+        add.value = s.top(); s.pop();
+        expression.push_back(add);
+    }
+}
+
+//!< Precedências das operações
+int Evaluator::get_precedence(std::string c) {
+    int prioridade = 0;
+    const char *d = c.c_str();
+    switch (*d) {
+        case '^':
+            prioridade = 3;
+            break;
+        case '*':
+            prioridade = 2;
+            break;
+        case '/':
+            prioridade = 2;
+            break;
+        case '%':
+            prioridade = 2;
+            break;
+        case '+':
+            prioridade = 1;
+            break;
+        case '-':
+            prioridade = 1;
+            break;
+        case '(':
+            prioridade = 0;
+            break;
+        default:
+            assert(false);
+    }
+
+    return prioridade;
+}
+
+//!< Verificar precedência dos operadores
+bool Evaluator::has_higher_precedence(std::string op1, std::string op2) {
+
+    int p1 = get_precedence(op1);
+    int p2 = get_precedence(std::move(op2));
+
+    if (p1 == p2 and is_right_association(op1))
+        return false;
+
+    return p1 >= p2;
 }

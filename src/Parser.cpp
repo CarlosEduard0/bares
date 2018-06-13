@@ -1,4 +1,4 @@
-#include "../include/Parser.h"
+#include "Parser.h"
 
 /// Converts the input character c_ into its corresponding terminal symbol code.
 Parser::terminal_symbol_t Parser::lexer(char c_) const {
@@ -7,18 +7,18 @@ Parser::terminal_symbol_t Parser::lexer(char c_) const {
             return terminal_symbol_t::TS_PLUS;
         case '-':
             return terminal_symbol_t::TS_MINUS;
-        case '*':
-            return terminal_symbol_t::TS_TIMES;
-        case '/':
-            return terminal_symbol_t::TS_SLASH;
         case '%':
             return terminal_symbol_t::TS_MOD;
+        case '/':
+            return terminal_symbol_t::TS_SLASH;
+        case '*':
+            return terminal_symbol_t::TS_TIMES;
         case '^':
             return terminal_symbol_t::TS_CIRCUMFLEX;
-        case '(':
-            return terminal_symbol_t::TS_OPENING_SCOPE;
         case ')':
             return terminal_symbol_t::TS_CLOSING_SCOPE;
+        case '(':
+            return terminal_symbol_t::TS_OPENING_SCOPE;
         case ' ':
             return terminal_symbol_t::TS_WS;
         case 9:
@@ -37,11 +37,11 @@ Parser::terminal_symbol_t Parser::lexer(char c_) const {
             return terminal_symbol_t::TS_NON_ZERO_DIGIT;
         case '\0':
             return terminal_symbol_t::TS_EOS; // end of string: the $ terminal symbol
-        default:break;
+        default:
+            break;
     }
     return terminal_symbol_t::TS_INVALID;
 }
-
 
 /// Consumes a valid character from the input source expression.
 void Parser::next_symbol() {
@@ -53,14 +53,13 @@ void Parser::next_symbol() {
 bool Parser::end_input() const {
     // "Fim de entrada" ocorre quando o iterador chega ao
     // fim da string que guarda a expressão.
-    return it_curr_symb == expr.end();
+    return it_curr_symb == expr.end(); // Stub
 }
 
 /// Returns the result of trying to match the current character with c_, **without** consuming the current character from the input expression.
 bool Parser::peek(terminal_symbol_t c_) const {
     // Checks whether the input symbol is equal to the argument symbol.
-    return (not end_input() and
-            lexer(*it_curr_symb) == c_);
+    return (not end_input()) and lexer(*it_curr_symb) == c_;
 }
 
 /// Returns the result of trying to match (peek()) and consume the current character with c_.
@@ -77,7 +76,6 @@ bool Parser::accept(terminal_symbol_t c_) {
         next_symbol();
         return true;
     }
-
     return false;
 }
 
@@ -85,20 +83,18 @@ bool Parser::accept(terminal_symbol_t c_) {
 bool Parser::expect(terminal_symbol_t c_) {
     // Skip all white spaces first.
     skip_ws();
-    return accept(c_);
+    return accept(c_); // Stub
 }
-
 
 /// Ignores any white space or tabs in the expression until reach a valid character or end of input.
 void Parser::skip_ws() {
     // Skip white spaces, while at the same time, check for end of string.
-    while (! end_input() && (lexer(*it_curr_symb) == Parser::terminal_symbol_t::TS_WS ||
-                             lexer(*it_curr_symb) == Parser::terminal_symbol_t::TS_TAB)) {
+    while ((!end_input()) &&
+           ((lexer(*it_curr_symb) == Parser::terminal_symbol_t::TS_WS) ||
+            (lexer(*it_curr_symb) == Parser::terminal_symbol_t::TS_TAB))) {
         next_symbol();
     }
 }
-
-
 
 //=== Non Terminal Symbols (NTS) methods.
 
@@ -113,28 +109,27 @@ void Parser::skip_ws() {
  */
 Parser::ResultType Parser::expression() {
     skip_ws();
-
     auto result = term();
-    while(result.type == ResultType::OK) {
-        if(expect(terminal_symbol_t::TS_CIRCUMFLEX)) {
-            token_list.emplace_back(Token("^", Token::token_t::OPERATOR));
-        } else if(expect(terminal_symbol_t::TS_MOD)) {
+    while (result.type == ResultType::OK) {
+
+        if (expect(terminal_symbol_t::TS_PLUS)) {
+            token_list.emplace_back("+", Token::token_t::OPERATOR);
+        } else if (expect(terminal_symbol_t::TS_MINUS)) {
+            token_list.emplace_back("-", Token::token_t::OPERATOR);
+        } else if (expect(terminal_symbol_t::TS_TIMES)) {
+            token_list.emplace_back("*", Token::token_t::OPERATOR);
+        } else if (expect(terminal_symbol_t::TS_SLASH)) {
+            token_list.emplace_back("/", Token::token_t::OPERATOR);
+        } else if (expect(terminal_symbol_t::TS_MOD)) {
             token_list.emplace_back("%", Token::token_t::OPERATOR);
-        } else if(expect(terminal_symbol_t::TS_SLASH)) {
-            token_list.emplace_back(Token("/", Token::token_t::OPERATOR));
-        } else if(expect(terminal_symbol_t::TS_TIMES)) {
-            token_list.emplace_back(Token("*", Token::token_t::OPERATOR));
-        } else if(expect(terminal_symbol_t::TS_PLUS)) {
-            token_list.emplace_back(Token("+", Token::token_t::OPERATOR));
-        } else if(expect(terminal_symbol_t::TS_MINUS)) {
-            token_list.emplace_back(Token("-", Token::token_t::OPERATOR));
+        } else if (expect(terminal_symbol_t::TS_CIRCUMFLEX)) {
+            token_list.emplace_back("^", Token::token_t::OPERATOR);
         } else {
             return result;
         }
 
         result = term();
-        if ( result.type != ResultType::OK and result.type != ResultType::INTEGER_OUT_OF_RANGE and end_input())
-        {
+        if (result.type != ResultType::OK and result.type != ResultType::INTEGER_OUT_OF_RANGE and end_input()) {
             result.type = ResultType::MISSING_TERM;
             return result;
         }
@@ -156,53 +151,41 @@ Parser::ResultType Parser::expression() {
  */
 Parser::ResultType Parser::term() {
     skip_ws();
-    // Guarda o início do termo no input, para possíveis mensagens de erro.
-    auto begin_token(it_curr_symb);
-    ResultType result;
+    std::string::iterator it_begin = it_curr_symb;
 
-    //Tentar encontrar um "("
-    if(expect(terminal_symbol_t::TS_OPENING_SCOPE)) {
-        // Colocar na lista de tokens
+    ResultType resultado;
+    if (expect(terminal_symbol_t::TS_OPENING_SCOPE)) {
         token_list.emplace_back("(", Token::token_t::OPENING_SCOPE);
-        // Tentar encontrar expressão
-        result = expression();
-        if(result.type == ResultType::OK) {
-            if(expect(terminal_symbol_t::TS_CLOSING_SCOPE)) {
-                token_list.emplace_back(Token(")", Token::token_t::CLOSING_SCOPE));
-            } else {
-                return ResultType(ResultType::MISSING_CLOSING, std::distance(expr.begin(), it_curr_symb));
-            }
+        resultado = expression();
+
+        if (resultado.type == ResultType::OK) {
+            if (not expect(terminal_symbol_t::TS_CLOSING_SCOPE))
+                return ResultType(ResultType::MISSING_CLOSING,
+                                  static_cast<ResultType::size_type>(std::distance(expr.begin(), it_curr_symb) + 1));
+
+            token_list.emplace_back(")", Token::token_t::CLOSING_SCOPE);
         }
     } else {
-        // Processe um inteiro.
-        result = integer();
-        // Vamos tokenizar o inteiro, se ele for bem formado.
-        if (result.type == ResultType::OK) {
-            // Copiar a substring correspondente para uma variável string.
-            std::string token_str;
-            std::copy(begin_token, it_curr_symb, std::back_inserter(token_str));
-            // Tentar realizar a conversão de string para inteiro (usar stoll()).
-            input_int_type token_int;
-            try {
-                token_int = stoll(token_str);
-            } catch (const std::invalid_argument &e) {
-                return ResultType(ResultType::ILL_FORMED_INTEGER,
-                                  std::distance(expr.begin(), begin_token) + 1);
-            }
+        resultado = integer();
+        if (resultado.type == ResultType::OK) {
+            std::string num;
+            num.insert(num.begin(), it_begin + resultado.at_col, it_curr_symb);
 
-            // Recebemos um inteiro válido, resta saber se está dentro da faixa.
-            if (token_int < std::numeric_limits<required_int_type>::min() ||
-                token_int > std::numeric_limits<required_int_type>::max()) {
-                // Fora da faixa, reportar erro.
-                return ResultType(ResultType::INTEGER_OUT_OF_RANGE,
-                                  std::distance(expr.begin(), begin_token) + 1);
+            std::string::iterator end_pos = std::remove(num.begin(), num.end(), ' ');
+            num.erase(end_pos, num.end());
+
+            input_int_type value = std::stoll(num);
+            if (value <= std::numeric_limits<Parser::required_int_type>::max()
+                && value >= std::numeric_limits<Parser::required_int_type>::min()) {
+                token_list.emplace_back(num, Token::token_t::OPERAND);
+            } else {
+                resultado.type = ResultType::INTEGER_OUT_OF_RANGE;
+                resultado.at_col = static_cast<ResultType::size_type>(std::distance(expr.begin(), it_begin) + 1);
             }
-            // Coloca o novo token na nossa lista de tokens.
-            token_list.emplace_back(Token(token_str, Token::token_t::OPERAND));
         }
     }
 
-    return result;
+    return resultado;
 }
 
 /// Validates (i.e. returns true or false) and consumes an integer from the input string.
@@ -217,22 +200,25 @@ Parser::ResultType Parser::term() {
  * @return true if an integer has been successfuly parsed from the input; false otherwise.
  */
 Parser::ResultType Parser::integer() {
-    // Se aceitarmos um zero, então o inteiro acabou aqui.
-    if (accept(terminal_symbol_t::TS_ZERO))
+    if (accept(terminal_symbol_t::TS_ZERO)) {
         return ResultType(ResultType::OK);
+    }
 
-    // Vamos tentar aceitar o '-'.
     int cont = 0;
-    while(expect(terminal_symbol_t::TS_MINUS)) {
+    while (expect(terminal_symbol_t::TS_MINUS)) {
         cont++;
     }
-    if(cont % 2 != 0) {
-        cont -= 1;
-    }
 
-    auto result = natural_number();
-    result.at_col = result.type == ResultType::OK ? cont : result.at_col;
-    return result;
+    if (cont % 2 == 1)
+        cont -= 1;
+
+    auto resultado = natural_number();
+
+    if (resultado.type == ResultType::OK)
+        resultado.at_col = static_cast<ResultType::size_type>(cont);
+
+    return resultado;
+
 }
 
 /// Validates (i.e. returns true or false) and consumes a natural number from the input string.
@@ -246,13 +232,13 @@ Parser::ResultType Parser::integer() {
  * @return true if a natural number has been successfuly parsed from the input; false otherwise.
  */
 Parser::ResultType Parser::natural_number() {
-    // Tem que vir um número que não seja zero! (de acordo com a definição).
-    if (!digit_excl_zero())
-        return ResultType(ResultType::ILL_FORMED_INTEGER, std::distance(expr.begin(), it_curr_symb) + 1);
-
-    // Cosumir os demais dígitos, se existirem...
-    while (digit()) /* empty */ ;
-
+    bool resultado = digit_excl_zero();
+    if (!resultado)
+        return ResultType(ResultType::ILL_FORMED_INTEGER,
+                          static_cast<ResultType::size_type>(std::distance(expr.begin(), it_curr_symb) + 1));
+    while (resultado) {
+        resultado = digit();
+    }
     return ResultType(ResultType::OK);
 }
 
@@ -281,7 +267,7 @@ bool Parser::digit_excl_zero() {
  * @return true if a digit has been successfuly parsed from the input; false otherwise.
  */
 bool Parser::digit() {
-    return accept(terminal_symbol_t::TS_ZERO) or digit_excl_zero();
+    return (accept(terminal_symbol_t::TS_ZERO) or digit_excl_zero());
 }
 
 /*!
@@ -295,42 +281,33 @@ bool Parser::digit() {
  * @see ResultType
  */
 Parser::ResultType Parser::parse(std::string e_) {
-    expr = std::move(e_); //  Guarda a expressão no membro correspondente.
-    it_curr_symb = expr.begin(); // Define o simbolo inicial a ser processado.
-    ResultType result; // By default it's OK.
-
-    // Sempre limpamos a lista de tokens da rodada anterior.
+    expr = std::move(e_);
+    it_curr_symb = expr.begin();
     token_list.clear();
-
-    // Vamos verificar se recebemos uma  Let us ignore any leading white spaces.
+    ResultType resultado(ResultType::OK);
     skip_ws();
-    if (end_input()) { // Premature end?
-        result = ResultType(ResultType::UNEXPECTED_END_OF_EXPRESSION,
-                            std::distance(expr.begin(), it_curr_symb) + 1);
-    } else {
-        // chamada regular para expressão.
-        result = expression();
-
-        // Verificar se ainda sobrou algo na expressão.
-        if (result.type == ResultType::OK) {
-            // Neste momento não deveria ter nada sobrando na string, a não ser
-            // espaços em branco.
-            skip_ws(); // Vamos "consumir" os espaços em branco, se existirem....
-            if (!end_input()) { // Se estiver tudo ok, deveríamos estar no final da string.
-                return ResultType(ResultType::EXTRANEOUS_SYMBOL, std::distance(expr.begin(), it_curr_symb) + 1);
-            }
-        }
+    if (end_input()) {
+        return ResultType(ResultType::UNEXPECTED_END_OF_EXPRESSION,
+                          static_cast<ResultType::size_type>(std::distance(expr.begin(), it_curr_symb) + 1));
     }
+    resultado = expression();
+    if (resultado.type == ResultType::OK) {
+        skip_ws();
+        if (!end_input()) {
+            token_list.clear();
+            return ResultType(ResultType::EXTRANEOUS_SYMBOL,
+                              static_cast<ResultType::size_type>(std::distance(expr.begin(), it_curr_symb) + 1));
+        }
 
-    return result;
+    }
+    return resultado;
 }
 
-
 /// Return the list of tokens, which is the by-product created during the syntax analysis.
-std::vector<Token>
-Parser::get_tokens() const {
+std::vector<Token> Parser::get_tokens() const {
     return token_list;
 }
 
 
-//==========================[ End of Parse.cpp ]==========================//
+
+//==========================[ Fim do parse.cpp ]==========================//

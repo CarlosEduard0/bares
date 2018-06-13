@@ -12,32 +12,52 @@
  * Any other character is just ignored.
  */
 
-#include <iostream>  // cout, endl
-#include <stack>     // stack
+#include <iostream>  //std::cout, std::cin
 #include <string>    // string
+#include <iomanip>   // std::distance
 #include <cassert>   // assert
 #include <cmath>     // pow
-#include <stdexcept> // std::runtime_error
-#include <vector>
-#include "Token.h"
+#include <sstream> // std::stringstream
+#include <utility>
+#include <stack>
+
+#include "Parser.h"
 
 class Evaluator {
-    //=== Aliases
-    using value_type = long int; //!< Type we operate on.
 
-public:
-    Token evaluate_postfix(std::vector<Token>) const;
-private:
-    bool is_operator(Token t) const;
-    bool is_operand(Token t) const;
-    bool is_opening_scope(Token t) const;
-    bool is_closing_scope(Token t) const;
-    std::vector<Token> infix_to_postfix(std::vector<Token>) const;
-    bool is_right_association(Token t) const;
-    short get_precedence(Token t) const;
-    bool has_higher_or_eq_precedence(Token op1, Token op2) const;
-    Token execute_operator(Token v1, Token v2, Token t) const;
+    using value_type = long int;
+    public:
+        struct EvaluatorResult {
+            enum code {
+                OK = 0,
+                DIVISION_BY_ZERO,
+                NUMERIC_OVERFLOW
+            };
+
+            std::string value_b;
+            code type_b;
+
+            explicit EvaluatorResult(std::string v_ = "", code t_ = code::OK)
+                    : value_b(std::move(v_)), type_b(t_) {/* empty */}
+        };
+
+    private:
+        std::vector<Token> expression;
+        bool is_operator(Token t);
+        bool is_operand(Token t);
+        bool is_opening_scope(std::string c);
+        bool is_closing_scope(std::string c);
+        bool has_higher_precedence(std::string op1, std::string op2);
+        bool is_right_association(std::string c);
+        int get_precedence(std::string c);
+
+    public:
+        Evaluator() = default;
+        ~Evaluator() = default;
+        Evaluator(const Evaluator &) = delete;
+        Evaluator &operator=(const Evaluator &) = delete;
+        void infix_to_postfix(std::vector<Token> infix);
+        Evaluator::EvaluatorResult execute_operator(std::string op1, std::string op2, Token opr);
+        Evaluator::EvaluatorResult evaluate(std::vector<Token>);
 };
-
-
 #endif //BARES_BARES_H
